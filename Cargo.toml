@@ -1,9 +1,20 @@
 [package]
 name = "ltx"
 authors = ["Michał Czyż <mike@c2yz.com>"]
-description = "A command-line tool for managing LaTeX projects"
 version = "0.1.0"
 edition = "2024"
+
+description = "A command-line tool for managing LaTeX projects"
+homepage = "https://github.com/eRgo35/ltx"
+repository = "https://github.com/eRgo35/ltx"
+documentation = "https://github.com/eRgo35/ltx"
+keywords = ["latex", "cli", "tool"]
+license = "MIT"
+readme = "README.md"
+
+[[bin]]
+name = "ltx"
+path = "src/main.rs"
 
 [dependencies]
 chrono = "0.4.41"
