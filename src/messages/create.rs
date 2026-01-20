@@ -5,7 +5,7 @@ pub fn print_creating_message(project_path: &std::path::Path) {
     println!(
         "{} Creating a new LaTeX project in {}",
         "✓".bold().green(),
-        project_path.display().to_string().bold()
+        format!("{}", project_path.display()).bold()
     );
     println!();
 }
@@ -15,7 +15,7 @@ pub fn print_created_message(project_name: &str, project_path: &std::path::Path)
         "{} Success! Created {} at {}",
         "✓".bold().green(),
         project_name.bold(),
-        project_path.display().to_string().bold()
+        format!("{}", project_path.display()).bold()
     );
     println!();
     println!("Inside that directory, you can run several commands:");
@@ -33,6 +33,6 @@ pub fn print_created_message(project_name: &str, project_path: &std::path::Path)
     println!(
         "  {} {}",
         "ltx build".bold().cyan(),
-        "# Build your LaTeX document".dimmed()
+        "% Build your LaTeX document".dimmed()
     );
 }

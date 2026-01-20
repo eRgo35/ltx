@@ -21,6 +21,9 @@ chrono = "0.4.41"
 clap = { version = "4.5.41", features = ["derive"] }
 colored = "3.0.0"
 inquire = "0.7"
+notify = "8.2.0"
+serde = { version = "1.0.228", features = ["derive"] }
+toml = "0.9.11"
 
 # The profile that 'dist' will build with
 [profile.dist]

@@ -4,6 +4,7 @@ use colored::Colorize;
 
 mod cli;
 mod commands;
+mod config;
 mod messages;
 
 fn main() {
@@ -11,14 +12,15 @@ fn main() {
 
     let result = match cli.command {
         Some(Commands::New { project_name }) => commands::new_command(project_name),
-        Some(Commands::Build { main_file }) => commands::build_command(main_file),
-        Some(Commands::Watch { main_file }) => commands::watch_command(main_file),
+        Some(Commands::Build { main_file }) => commands::build_command(&main_file),
+        Some(Commands::Watch { main_file }) => commands::watch_command(&main_file),
         Some(Commands::Clean) => commands::clean_command(),
+        Some(Commands::Run { main_file }) => commands::run_command(&main_file),
         None => Ok(()),
     };
 
     if let Err(err) = result {
-        eprintln!("{} {}", "✖".bold().red(), err.to_string());
+        eprintln!("{} {}", "✖".bold().red(), err);
         std::process::exit(1);
     }
 }

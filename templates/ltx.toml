@@ -1,0 +1,11 @@
+[project]
+name = "{project_name}"
+author = "{author_name}"
+version = "0.1.0"
+
+[document]
+entry = "main.tex"
+engine = "xelatex"
+
+[bib]
+engine = "biber"

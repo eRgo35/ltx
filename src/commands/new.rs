@@ -80,7 +80,8 @@ fn create_project_structure(
 
     let main_tex = include_str!("../../templates/main.tex");
     let bibliography_bib = include_str!("../../templates/bibliography.bib");
-    let readme_md = format!("# {}\n", project_name);
+    let ltx_toml = include_str!("../../templates/ltx.toml");
+    let readme_md = include_str!("../../templates/README.md");
 
     let main_tex = main_tex
         .replace("{project_name}", project_name)
@@ -92,8 +93,15 @@ fn create_project_structure(
         .replace("{author_name}", author_name)
         .replace("{date}", date);
 
+    let ltx_toml = ltx_toml
+        .replace("{project_name}", project_name)
+        .replace("{author_name}", author_name);
+
+    let readme_md = readme_md.replace("{project_name}", project_name);
+
     std::fs::write(project_path.join("main.tex"), main_tex)?;
     std::fs::write(project_path.join("bibliography.bib"), bibliography_bib)?;
+    std::fs::write(project_path.join("ltx.toml"), ltx_toml)?;
     std::fs::write(project_path.join("README.md"), readme_md)?;
 
     if let Err(e) = std::process::Command::new(get_git_command())

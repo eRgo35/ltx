@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 
 const NAME: Option<&str> = option_env!("CARGO_PKG_NAME");
@@ -26,7 +28,7 @@ pub enum Commands {
     #[command(alias = "b", about = "Build the LaTeX document")]
     Build {
         #[arg(short, long, default_value = "main.tex")]
-        main_file: String,
+        main_file: PathBuf,
     },
 
     #[command(
@@ -35,9 +37,15 @@ pub enum Commands {
     )]
     Watch {
         #[arg(short, long, default_value = "main.tex")]
-        main_file: String,
+        main_file: PathBuf,
     },
 
     #[command(alias = "c", about = "Clean build artifacts")]
     Clean,
+
+    #[command(alias = "r", about = "Run the compiled document")]
+    Run {
+        #[arg(short, long, default_value = "main.tex")]
+        main_file: PathBuf,
+    },
 }
