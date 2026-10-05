@@ -35,8 +35,12 @@ A command-line tool for managing LaTeX projects
 Usage: ltx [COMMAND]
 
 Commands:
-  new   Initialize a new LaTeX project
-  help  Print this message or the help of the given subcommand(s)
+  new    Initialize a new LaTeX project
+  build  Build the LaTeX document
+  watch  Watch for changes and rebuild the LaTeX document
+  clean  Clean build artifacts
+  run    Run the compiled document
+  help   Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help
