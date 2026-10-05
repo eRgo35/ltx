@@ -3,6 +3,7 @@ use std::{env::current_dir, error::Error, fs::read_to_string, path::PathBuf};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // reserved for a future metadata command
 pub struct Project {
     pub name: String,
     pub author: String,
@@ -24,6 +25,7 @@ pub struct Bib {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct Config {
     pub project: Project,
     pub document: Document,
@@ -31,7 +33,7 @@ pub struct Config {
 }
 
 fn default_entry() -> PathBuf {
-    PathBuf::from("main.text")
+    PathBuf::from("main.tex")
 }
 
 fn default_engine() -> String {
