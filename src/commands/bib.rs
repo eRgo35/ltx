@@ -7,7 +7,12 @@ use std::{
 use colored::Colorize;
 
 const CITATION_PREFIXES: &[&str] = &[
-    "\\cite", "\\citep", "\\citet", "\\nocite", "\\footcite", "\\textcite",
+    "\\cite",
+    "\\citep",
+    "\\citet",
+    "\\nocite",
+    "\\footcite",
+    "\\textcite",
 ];
 
 /// Scans every `*.tex` file directly in `cwd` (non-recursive) for citation

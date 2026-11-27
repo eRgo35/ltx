@@ -12,10 +12,16 @@ fn main() {
 
     let result = match cli.command {
         Some(Commands::New { project_name }) => commands::new_command(project_name),
-        Some(Commands::Build { main_file, verbose }) => commands::build_command(main_file.as_deref(), verbose).map(|_| ()),
-        Some(Commands::Watch { main_file, verbose }) => commands::watch_command(main_file.as_deref(), verbose),
+        Some(Commands::Build { main_file, verbose }) => {
+            commands::build_command(main_file.as_deref(), verbose).map(|_| ())
+        }
+        Some(Commands::Watch { main_file, verbose }) => {
+            commands::watch_command(main_file.as_deref(), verbose)
+        }
         Some(Commands::Clean) => commands::clean_command(),
-        Some(Commands::Run { main_file, verbose }) => commands::run_command(main_file.as_deref(), verbose),
+        Some(Commands::Run { main_file, verbose }) => {
+            commands::run_command(main_file.as_deref(), verbose)
+        }
         None => Ok(()),
     };
 
