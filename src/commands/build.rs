@@ -1,5 +1,6 @@
 use std::{
     error::Error,
+    fs,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -32,10 +33,7 @@ pub fn build_command(main_file: Option<&Path>) -> Result<PathBuf, Box<dyn Error>
     preflight(&engine, EngineKind::Xelatex)?;
 
     // Pass 1: xelatex
-    let status = Command::new(&engine).arg(&entry).current_dir(&cwd).status()?;
-    if !status.success() {
-        return Err(format!("Build failed (xelatex) with exit code: {}", status).into());
-    }
+    run_engine(&engine, &entry, &cwd)?;
 
     // Optional pass: biber when citations are detected in cwd/*.tex
     if citations_present(&cwd) {
@@ -49,11 +47,31 @@ pub fn build_command(main_file: Option<&Path>) -> Result<PathBuf, Box<dyn Error>
         }
 
         // Pass 2: xelatex
-        let status = Command::new(&engine).arg(&entry).current_dir(&cwd).status()?;
-        if !status.success() {
-            return Err(format!("Build failed (xelatex) with exit code: {}", status).into());
-        }
+        run_engine(&engine, &entry, &cwd)?;
+    }
+
+    // One extra pass when LaTeX reports stale cross-references / TOC.
+    if rerun_requested(&cwd.join(format!("{jobname}.log"))) {
+        run_engine(&engine, &entry, &cwd)?;
     }
 
     Ok(cwd.join(format!("{jobname}.pdf")))
+}
+
+fn run_engine(engine: &str, entry: &Path, cwd: &Path) -> Result<(), Box<dyn Error>> {
+    let status = Command::new(engine).arg(entry).current_dir(cwd).status()?;
+    if !status.success() {
+        return Err(format!("Build failed ({}) with exit code: {}", engine, status).into());
+    }
+    Ok(())
+}
+
+fn rerun_requested(log: &Path) -> bool {
+    // Logs are not guaranteed UTF-8, so read bytes and convert lossily.
+    fs::read(log)
+        .map(|b| {
+            let text = String::from_utf8_lossy(&b);
+            text.contains("Rerun to get") || text.contains("Please rerun LaTeX")
+        })
+        .unwrap_or(false)
 }
