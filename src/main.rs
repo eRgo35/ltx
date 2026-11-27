@@ -11,7 +11,10 @@ fn main() {
     let cli = Cli::parse();
 
     let result = match cli.command {
-        Some(Commands::New { project_name }) => commands::new_command(project_name),
+        Some(Commands::New {
+            project_name,
+            template,
+        }) => commands::new_command(project_name, template),
         Some(Commands::Build { main_file, verbose }) => {
             commands::build_command(main_file.as_deref(), verbose).map(|_| ())
         }

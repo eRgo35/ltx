@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
+use crate::commands::new::Template;
+
 const NAME: Option<&str> = option_env!("CARGO_PKG_NAME");
 const AUTHOR: Option<&str> = option_env!("CARGO_PKG_AUTHORS");
 const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
@@ -23,7 +25,12 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     #[command(aliases = ["n", "init"], about = "Initialize a new LaTeX project")]
-    New { project_name: Option<String> },
+    New {
+        project_name: Option<String>,
+        /// Project template [default: article; asked interactively without a project name]
+        #[arg(short, long, value_enum)]
+        template: Option<Template>,
+    },
 
     #[command(alias = "b", about = "Build the LaTeX document")]
     Build {

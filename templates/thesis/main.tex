@@ -1,0 +1,26 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{biblatex}
+\addbibresource{bibliography.bib}
+
+\title{{project_name}}
+\author{{author_name}}
+\date{{date}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+A short summary of the thesis.
+\end{abstract}
+
+\tableofcontents
+
+% Each chapter lives in its own file under chapters/.
+\include{chapters/introduction}
+\include{chapters/conclusion}
+
+\printbibliography
+
+\end{document}
