@@ -92,7 +92,7 @@ pub fn preflight(engine: &str, kind: EngineKind) -> Result<(), Box<dyn Error>> {
             label.bold()
         );
         eprintln!("  {}", platform_hint());
-        eprintln!("  {}", "Continuing — the real error will surface when ltx invokes the engine.");
+        eprintln!("  Continuing — the real error will surface when ltx invokes the engine.");
     }
     Ok(())
 }
