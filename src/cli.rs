@@ -30,6 +30,9 @@ pub enum Commands {
         /// Entry file; overrides `document.entry` from ltx.toml
         #[arg(short, long)]
         main_file: Option<PathBuf>,
+        /// Show the full output of xelatex and biber
+        #[arg(short, long)]
+        verbose: bool,
     },
 
     #[command(
@@ -40,6 +43,9 @@ pub enum Commands {
         /// Entry file; overrides `document.entry` from ltx.toml
         #[arg(short, long)]
         main_file: Option<PathBuf>,
+        /// Show the full output of xelatex and biber
+        #[arg(short, long)]
+        verbose: bool,
     },
 
     #[command(alias = "c", about = "Clean build artifacts")]
@@ -50,5 +56,8 @@ pub enum Commands {
         /// Entry file; overrides `document.entry` from ltx.toml
         #[arg(short, long)]
         main_file: Option<PathBuf>,
+        /// Show the full output of xelatex and biber
+        #[arg(short, long)]
+        verbose: bool,
     },
 }
