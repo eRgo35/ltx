@@ -84,18 +84,19 @@ fn is_ascii_letter(b: u8) -> bool {
     b.is_ascii_alphabetic()
 }
 
-/// Probes `engine --version`. On spawn failure or non-zero exit, prints a
-/// yellow warning naming the engine and the platform-appropriate install
-/// hint. Never aborts.
-pub fn preflight(engine: &str) {
-    let ok = Command::new(engine)
+/// Probes `engine --version` and returns its output. On spawn failure or
+/// non-zero exit, prints a yellow warning naming the engine and the
+/// platform-appropriate install hint, and returns `None`. Never aborts.
+pub fn preflight(engine: &str) -> Option<String> {
+    let version = Command::new(engine)
         .arg("--version")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .is_ok_and(|s| s.success());
+        .stdin(Stdio::null())
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned());
 
-    if !ok {
+    if version.is_none() {
         eprintln!(
             "{} {} not found or failed --version probe.",
             "⚠".bold().yellow(),
@@ -104,6 +105,7 @@ pub fn preflight(engine: &str) {
         eprintln!("  {}", platform_hint());
         eprintln!("  Continuing — the real error will surface when ltx invokes the engine.");
     }
+    version
 }
 
 #[cfg(target_os = "linux")]

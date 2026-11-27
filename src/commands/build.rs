@@ -41,24 +41,26 @@ pub fn build_command(main_file: Option<&Path>, verbose: bool) -> Result<PathBuf,
         mirror_tex_dirs(&cwd, &cwd, &cwd.join(out))?;
     }
 
+    // Preflight: warn (do not fail) when engines are missing.
+    let version = preflight(&config.document.engine);
+    let miktex = version.is_some_and(|v| v.contains("MiKTeX"));
+
     let job = Job {
         engine: config.document.engine,
         entry,
         jobname,
         cwd,
         out,
+        miktex,
         verbose,
     };
-
-    // Preflight: warn (do not fail) when engines are missing.
-    preflight(&job.engine);
 
     let mut pass = 1;
     job.latex(pass)?;
 
     // Optional pass: biber when citations are detected in cwd/*.tex
     if citations_present(&job.cwd) {
-        preflight(&config.bib.engine);
+        let _ = preflight(&config.bib.engine);
         job.biber(&config.bib.engine)?;
         pass += 1;
         job.latex(pass)?;
@@ -103,6 +105,7 @@ struct Job {
     cwd: PathBuf,
     /// Output directory relative to `cwd`; `None` writes into `cwd`.
     out: Option<PathBuf>,
+    miktex: bool,
     verbose: bool,
 }
 
@@ -120,8 +123,16 @@ impl Job {
         if let Some(out) = &self.out {
             cmd.arg(format!("-output-directory={}", out.display()));
         }
+        // Unwrapped, untruncated log lines keep the log parseable. TeX Live
+        // reads these from the environment, MiKTeX only from its options.
+        if self.miktex {
+            cmd.args([
+                "-max-print-line=10000",
+                "-error-line=254",
+                "-half-error-line=238",
+            ]);
+        }
         cmd.arg(&self.entry)
-            // Unwrapped, untruncated log lines keep the log parseable (TeX Live).
             .env("max_print_line", "10000")
             .env("error_line", "254")
             .env("half_error_line", "238");
