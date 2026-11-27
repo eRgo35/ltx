@@ -35,6 +35,25 @@ pub fn citations_present(cwd: &Path) -> bool {
 }
 
 fn scan_bytes(bytes: &[u8]) -> bool {
+    bytes
+        .split(|&b| b == b'\n')
+        .any(|line| scan_line(strip_comment(line)))
+}
+
+/// Cuts a line at the first `%` that starts a comment (not `\%`).
+fn strip_comment(line: &[u8]) -> &[u8] {
+    let mut backslashes = 0;
+    for (i, &b) in line.iter().enumerate() {
+        match b {
+            b'\\' => backslashes += 1,
+            b'%' if backslashes % 2 == 0 => return &line[..i],
+            _ => backslashes = 0,
+        }
+    }
+    line
+}
+
+fn scan_line(bytes: &[u8]) -> bool {
     for prefix in CITATION_PREFIXES {
         let needle = prefix.as_bytes();
         let mut start = 0;
@@ -127,6 +146,19 @@ mod tests {
     #[test]
     fn ignores_longer_commands_sharing_a_prefix() {
         assert!(!scan_bytes(b"\\citation{a} \\citestyle{b}"));
+    }
+
+    #[test]
+    fn ignores_commented_out_citations() {
+        assert!(!scan_bytes(b"% \\cite{a}\ntext"));
+        assert!(!scan_bytes(b"text % see \\cite{a}"));
+    }
+
+    #[test]
+    fn escaped_percent_does_not_start_a_comment() {
+        assert!(scan_bytes(b"50\\% of \\cite{a}"));
+        // `\\` is a line break, so the `%` after it starts a comment.
+        assert!(!scan_bytes(b"a\\\\% \\cite{a}"));
     }
 
     #[test]
