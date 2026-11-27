@@ -1,18 +1,11 @@
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 
 use crate::commands::build_command;
 
 pub fn run_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
-    if let Err(e) = build_command(main_file) {
-        eprintln!("Build error: {:?}", e);
-    }
-
-    let mut pdf_file = main_file
-        .map(Path::to_path_buf)
-        .unwrap_or_else(|| PathBuf::from("main.tex"));
-    pdf_file.set_extension("pdf");
+    let pdf_file = build_command(main_file)?;
 
     #[cfg(target_os = "linux")]
     {
@@ -21,8 +14,10 @@ pub fn run_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
 
     #[cfg(target_os = "windows")]
     {
+        // Empty "" is the window title; otherwise `start` treats a quoted path as the title.
         Command::new("cmd")
-            .args(&["/C", "start", pdf_file.to_str().unwrap()])
+            .args(["/C", "start", ""])
+            .arg(&pdf_file)
             .spawn()?;
     }
 

@@ -1,12 +1,17 @@
-use std::{error::Error, path::Path, process::Command};
+use std::{
+    error::Error,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use crate::{
     commands::{citations_present, preflight, EngineKind},
     config::load_config,
 };
 
+/// Builds the document and returns the path of the produced PDF.
 /// `main_file` overrides `document.entry` from `ltx.toml` when given.
-pub fn build_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
+pub fn build_command(main_file: Option<&Path>) -> Result<PathBuf, Box<dyn Error>> {
     let (config, cwd) = load_config()?;
 
     let engine = config.document.engine.clone();
@@ -50,5 +55,5 @@ pub fn build_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
         }
     }
 
-    Ok(())
+    Ok(cwd.join(format!("{jobname}.pdf")))
 }
