@@ -1,5 +1,7 @@
 use std::fs;
 
+use crate::config::load_config;
+
 // Matched against the end of the file name, so multi-dot suffixes work.
 const ARTIFACT_SUFFIXES: &[&str] = &[
     ".aux",
@@ -18,8 +20,22 @@ const ARTIFACT_SUFFIXES: &[&str] = &[
     ".xdv",
 ];
 
+/// Removes the output directory (when `document.output` is set) and any
+/// intermediate files in the project root, e.g. from builds before it was set.
 pub fn clean_command() -> Result<(), Box<dyn std::error::Error>> {
     let current_dir = std::env::current_dir()?;
+
+    // Works without ltx.toml too; a present but invalid one is an error.
+    if current_dir.join("ltx.toml").exists() {
+        let (config, _) = load_config()?;
+        if let Some(out) = config.document.output_dir()? {
+            let out = current_dir.join(out);
+            if out.is_dir() {
+                fs::remove_dir_all(&out)?;
+            }
+        }
+    }
+
     for entry in fs::read_dir(&current_dir)? {
         let path = entry?.path();
         if !path.is_file() {

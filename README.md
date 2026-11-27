@@ -14,7 +14,8 @@ A command-line tool for managing LaTeX projects
 - **Readable errors**: Errors and relevant warnings are read from the log and shown cargo-style, with the source line and location. Use `--verbose` for the full engine output.
 - **Watch**: Rebuilds on changes to `.tex`, `.bib` and files under `images/`.
 - **Clean / Run**: Removes intermediate files; builds and opens the PDF.
-- **Configuration**: Entry file and engines are set in `ltx.toml` (`--main-file` overrides the entry).
+- **Output directory**: New projects write the PDF and intermediate files to `build/` (`output = "build"` in `[document]`); `ltx clean` removes it. Without the key, outputs go to the project root.
+- **Configuration**: Entry file, engines and output directory are set in `ltx.toml` (`--main-file` overrides the entry). Every section is optional.
 
 ## Installation
 
