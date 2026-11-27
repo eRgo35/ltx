@@ -16,6 +16,13 @@ pub fn build_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
         .map(Path::to_path_buf)
         .unwrap_or(config.document.entry);
 
+    // The engine writes outputs to cwd, named after the entry's stem (jobname).
+    let jobname = entry
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .ok_or_else(|| format!("Invalid entry file: {}", entry.display()))?
+        .to_owned();
+
     // Preflight: warn (do not fail) when engines are missing.
     preflight(&engine, EngineKind::Xelatex)?;
 
@@ -28,7 +35,10 @@ pub fn build_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
     // Optional pass: biber when citations are detected in cwd/*.tex
     if citations_present(&cwd) {
         preflight(&bib_engine, EngineKind::Bib)?;
-        let status = Command::new(&bib_engine).current_dir(&cwd).status()?;
+        let status = Command::new(&bib_engine)
+            .arg(&jobname)
+            .current_dir(&cwd)
+            .status()?;
         if !status.success() {
             return Err(format!("Build failed ({}): exit code {}", bib_engine, status).into());
         }
