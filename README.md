@@ -10,13 +10,27 @@ A command-line tool for managing LaTeX projects
 
 - **Project Creation**: Easily create new LaTeX projects with a predefined structure.
 - **Git Integration**: Automatically initializes a Git repository for your project.
-- More features to be added in the future.
+- **Build**: Runs `xelatex`, adds a `biber` pass when the document cites sources, and reruns when LaTeX asks for it (TOC, cross-references).
+- **Watch**: Rebuilds on changes to `.tex`, `.bib` and files under `images/`.
+- **Clean / Run**: Removes intermediate files; builds and opens the PDF.
+- **Configuration**: Entry file and engines are set in `ltx.toml` (`--main-file` overrides the entry).
 
 ## Installation
 
+Prebuilt binaries for Linux, macOS and Windows are on the [releases page](https://github.com/eRgo35/ltx/releases).
+
 ```bash
-makepkg -si # For Arch Linux users
+# Linux / macOS
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/eRgo35/ltx/releases/latest/download/ltx-installer.sh | sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -c "irm https://github.com/eRgo35/ltx/releases/latest/download/ltx-installer.ps1 | iex"
+
+# From source
+cargo install --git https://github.com/eRgo35/ltx
 ```
+
+`ltx build` requires a TeX distribution providing `xelatex` and `biber` (TeX Live, MacTeX or MiKTeX).
 
 ## Building
 
