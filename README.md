@@ -8,7 +8,7 @@ A command-line tool for managing LaTeX projects
 
 ## Features
 
-- **Project Creation**: Easily create new LaTeX projects with a predefined structure.
+- **Project Creation**: Create a new LaTeX project from a template: `article` (default), `report`, `beamer`, `thesis` or `letter` (`ltx new my-thesis --template thesis`). Without a project name, `ltx new` asks for the name and the template.
 - **Git Integration**: Automatically initializes a Git repository for your project.
 - **Build**: Runs `xelatex`, adds a `biber` pass when the document cites sources, and reruns when LaTeX asks for it (TOC, cross-references).
 - **Readable errors**: Errors and relevant warnings are read from the log and shown cargo-style, with the source line and location. Use `--verbose` for the full engine output.
