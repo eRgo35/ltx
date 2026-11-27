@@ -19,6 +19,7 @@ fn main() {
             commands::watch_command(main_file.as_deref(), verbose)
         }
         Some(Commands::Clean) => commands::clean_command(),
+        Some(Commands::Doctor) => commands::doctor_command(),
         Some(Commands::Run { main_file, verbose }) => {
             commands::run_command(main_file.as_deref(), verbose)
         }
