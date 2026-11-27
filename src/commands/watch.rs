@@ -28,7 +28,7 @@ pub fn watch_command(main_file: Option<&Path>, verbose: bool) -> Result<(), Box<
     watcher.watch(&cwd, RecursiveMode::Recursive)?;
 
     // Best-effort preflight so the user sees a warning before the first build.
-    preflight(&engine);
+    let _ = preflight(&engine);
 
     println!(
         "Watching {} for changes (.tex, .bib, images/*)...",
