@@ -96,14 +96,7 @@ fn is_ascii_letter(b: u8) -> bool {
 /// non-zero exit, prints a yellow warning naming the engine and the
 /// platform-appropriate install hint, and returns `None`. Never aborts.
 pub fn preflight(engine: &str) -> Option<String> {
-    let version = Command::new(engine)
-        .arg("--version")
-        .stdin(Stdio::null())
-        .output()
-        .ok()
-        .filter(|o| o.status.success())
-        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned());
-
+    let version = version_output(engine);
     if version.is_none() {
         eprintln!(
             "{} {} not found or failed --version probe.",
@@ -116,16 +109,27 @@ pub fn preflight(engine: &str) -> Option<String> {
     version
 }
 
+/// Output of `program --version`, or `None` if it cannot be run or fails.
+pub fn version_output(program: &str) -> Option<String> {
+    Command::new(program)
+        .arg("--version")
+        .stdin(Stdio::null())
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+}
+
 #[cfg(target_os = "linux")]
-fn platform_hint() -> &'static str {
+pub fn platform_hint() -> &'static str {
     "Install TeX Live (provides xelatex, biber): https://tug.org/texlive/"
 }
 #[cfg(target_os = "macos")]
-fn platform_hint() -> &'static str {
+pub fn platform_hint() -> &'static str {
     "Install MacTeX (provides xelatex, biber): https://tug.org/mactex/"
 }
 #[cfg(target_os = "windows")]
-fn platform_hint() -> &'static str {
+pub fn platform_hint() -> &'static str {
     "Install MiKTeX (provides xelatex, biber): https://miktex.org/"
 }
 

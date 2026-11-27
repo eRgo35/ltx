@@ -3,7 +3,7 @@ use inquire::Text;
 
 use crate::messages;
 
-fn get_git_command() -> String {
+pub fn get_git_command() -> String {
     std::env::var("LTX_GIT_OVERRIDE").unwrap_or_else(|_| "git".to_string())
 }
 

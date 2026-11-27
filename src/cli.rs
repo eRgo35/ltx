@@ -51,6 +51,9 @@ pub enum Commands {
     #[command(alias = "c", about = "Clean build artifacts")]
     Clean,
 
+    #[command(about = "Check that the TeX engine, biber, git and ltx.toml are usable")]
+    Doctor,
+
     #[command(alias = "r", about = "Run the compiled document")]
     Run {
         /// Entry file; overrides `document.entry` from ltx.toml

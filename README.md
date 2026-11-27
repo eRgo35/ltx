@@ -14,6 +14,7 @@ A command-line tool for managing LaTeX projects
 - **Readable errors**: Errors and relevant warnings are read from the log and shown cargo-style, with the source line and location. Use `--verbose` for the full engine output.
 - **Watch**: Rebuilds on changes to `.tex`, `.bib` and files under `images/`.
 - **Clean / Run**: Removes intermediate files; builds and opens the PDF.
+- **Doctor**: `ltx doctor` checks the configured engines, git and `ltx.toml`, and prints their versions.
 - **Output directory**: New projects write the PDF and intermediate files to `build/` (`output = "build"` in `[document]`); `ltx clean` removes it. Without the key, outputs go to the project root.
 - **Configuration**: Entry file, engines and output directory are set in `ltx.toml` (`--main-file` overrides the entry). Every section is optional.
 
@@ -51,12 +52,13 @@ A command-line tool for managing LaTeX projects
 Usage: ltx [COMMAND]
 
 Commands:
-  new    Initialize a new LaTeX project
-  build  Build the LaTeX document
-  watch  Watch for changes and rebuild the LaTeX document
-  clean  Clean build artifacts
-  run    Run the compiled document
-  help   Print this message or the help of the given subcommand(s)
+  new     Initialize a new LaTeX project
+  build   Build the LaTeX document
+  watch   Watch for changes and rebuild the LaTeX document
+  clean   Clean build artifacts
+  doctor  Check that the TeX engine, biber, git and ltx.toml are usable
+  run     Run the compiled document
+  help    Print this message or the help of the given subcommand(s)
 
 Options:
   -h, --help     Print help
