@@ -1,5 +1,7 @@
+use std::fmt;
+
 use colored::Colorize;
-use inquire::Text;
+use inquire::{Select, Text};
 
 use crate::messages;
 
@@ -7,10 +9,95 @@ pub fn get_git_command() -> String {
     std::env::var("LTX_GIT_OVERRIDE").unwrap_or_else(|_| "git".to_string())
 }
 
-pub fn new_command(project_name: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
-    let mut project_name = match project_name {
-        Some(name) if !name.trim().is_empty() => name.trim().to_string(),
-        _ => interactive_prompt()?,
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
+pub enum Template {
+    Article,
+    Report,
+    Beamer,
+    Thesis,
+    Letter,
+}
+
+impl Template {
+    const ALL: [Template; 5] = [
+        Template::Article,
+        Template::Report,
+        Template::Beamer,
+        Template::Thesis,
+        Template::Letter,
+    ];
+
+    fn name(self) -> &'static str {
+        match self {
+            Template::Article => "article",
+            Template::Report => "report",
+            Template::Beamer => "beamer",
+            Template::Thesis => "thesis",
+            Template::Letter => "letter",
+        }
+    }
+
+    fn description(self) -> &'static str {
+        match self {
+            Template::Article => "Short document with sections",
+            Template::Report => "Chapters, table of contents and bibliography",
+            Template::Beamer => "Presentation slides",
+            Template::Thesis => "Title page, abstract, chapters in chapters/, bibliography",
+            Template::Letter => "Formal letter",
+        }
+    }
+
+    /// Files specific to this template, as (path in the project, contents).
+    fn files(self) -> &'static [(&'static str, &'static str)] {
+        match self {
+            Template::Article => &[("main.tex", include_str!("../../templates/article/main.tex"))],
+            Template::Report => &[("main.tex", include_str!("../../templates/report/main.tex"))],
+            Template::Beamer => &[("main.tex", include_str!("../../templates/beamer/main.tex"))],
+            Template::Thesis => &[
+                ("main.tex", include_str!("../../templates/thesis/main.tex")),
+                (
+                    "chapters/introduction.tex",
+                    include_str!("../../templates/thesis/chapters/introduction.tex"),
+                ),
+                (
+                    "chapters/conclusion.tex",
+                    include_str!("../../templates/thesis/chapters/conclusion.tex"),
+                ),
+            ],
+            Template::Letter => &[("main.tex", include_str!("../../templates/letter/main.tex"))],
+        }
+    }
+
+    fn has_bibliography(self) -> bool {
+        self != Template::Letter
+    }
+}
+
+impl fmt::Display for Template {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:<8} {}", self.name(), self.description())
+    }
+}
+
+/// Creates a project from `template`. Without a project name, asks for the
+/// name and, unless `template` is given, for the template too.
+pub fn new_command(
+    project_name: Option<String>,
+    template: Option<Template>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let (mut project_name, template) = match project_name {
+        Some(name) if !name.trim().is_empty() => (
+            name.trim().to_string(),
+            template.unwrap_or(Template::Article),
+        ),
+        _ => {
+            let name = interactive_prompt()?;
+            let template = match template {
+                Some(t) => t,
+                None => Select::new("Which template?", Template::ALL.to_vec()).prompt()?,
+            };
+            (name, template)
+        }
     };
 
     let current_dir = std::env::current_dir()?;
@@ -35,7 +122,7 @@ pub fn new_command(project_name: Option<String>) -> Result<(), Box<dyn std::erro
 
     messages::print_creating_message(&project_path);
 
-    create_project_structure(&project_name, &author_name, &date, &project_path)?;
+    create_project_structure(template, &project_name, &author_name, &date, &project_path)?;
 
     messages::print_created_message(&project_name, &project_path);
 
@@ -70,6 +157,7 @@ fn interactive_prompt() -> Result<String, Box<dyn std::error::Error>> {
 }
 
 fn create_project_structure(
+    template: Template,
     project_name: &str,
     author_name: &str,
     date: &str,
@@ -78,31 +166,28 @@ fn create_project_structure(
     std::fs::create_dir_all(project_path)?;
     std::fs::create_dir_all(project_path.join("images"))?;
 
-    let main_tex = include_str!("../../templates/main.tex");
-    let bibliography_bib = include_str!("../../templates/bibliography.bib");
-    let ltx_toml = include_str!("../../templates/ltx.toml");
-    let readme_md = include_str!("../../templates/README.md");
+    let fill = |text: &str| {
+        text.replace("{project_name}", project_name)
+            .replace("{author_name}", author_name)
+            .replace("{date}", date)
+    };
 
-    let main_tex = main_tex
-        .replace("{project_name}", project_name)
-        .replace("{author_name}", author_name)
-        .replace("{date}", date);
-
-    let bibliography_bib = bibliography_bib
-        .replace("{project_name}", project_name)
-        .replace("{author_name}", author_name)
-        .replace("{date}", date);
-
-    let ltx_toml = ltx_toml
-        .replace("{project_name}", project_name)
-        .replace("{author_name}", author_name);
-
-    let readme_md = readme_md.replace("{project_name}", project_name);
-
-    std::fs::write(project_path.join("main.tex"), main_tex)?;
-    std::fs::write(project_path.join("bibliography.bib"), bibliography_bib)?;
-    std::fs::write(project_path.join("ltx.toml"), ltx_toml)?;
-    std::fs::write(project_path.join("README.md"), readme_md)?;
+    let mut files: Vec<(&str, &str)> = template.files().to_vec();
+    files.push(("ltx.toml", include_str!("../../templates/ltx.toml")));
+    files.push(("README.md", include_str!("../../templates/README.md")));
+    if template.has_bibliography() {
+        files.push((
+            "bibliography.bib",
+            include_str!("../../templates/bibliography.bib"),
+        ));
+    }
+    for (path, contents) in files {
+        let path = project_path.join(path);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(path, fill(contents))?;
+    }
 
     if let Err(e) = std::process::Command::new(get_git_command())
         .arg("init")
@@ -138,4 +223,44 @@ fn get_author_name() -> String {
                 })
                 .unwrap_or_else(|| "John Smith".to_string())
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Template;
+
+    #[test]
+    fn every_template_has_a_main_document() {
+        for t in Template::ALL {
+            let main = t.files().iter().find(|(p, _)| *p == "main.tex");
+            assert!(
+                main.is_some_and(|(_, c)| c.contains("\\documentclass")),
+                "{t:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn templates_use_only_known_placeholders() {
+        for t in Template::ALL {
+            for (path, contents) in t.files() {
+                let filled = contents
+                    .replace("{project_name}", "")
+                    .replace("{author_name}", "")
+                    .replace("{date}", "");
+                for leftover in ["{project", "{author", "{date"] {
+                    assert!(!filled.contains(leftover), "{t:?} {path}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn only_documents_that_cite_get_a_bibliography() {
+        for t in Template::ALL {
+            let cites = t.files().iter().any(|(_, c)| c.contains("\\cite"));
+            assert!(!cites || t.has_bibliography(), "{t:?} cites without a .bib");
+        }
+        assert!(!Template::Letter.has_bibliography());
+    }
 }
