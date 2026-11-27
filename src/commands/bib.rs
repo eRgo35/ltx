@@ -1,5 +1,4 @@
 use std::{
-    error::Error,
     fs,
     path::Path,
     process::{Command, Stdio},
@@ -10,11 +9,6 @@ use colored::Colorize;
 const CITATION_PREFIXES: &[&str] = &[
     "\\cite", "\\citep", "\\citet", "\\nocite", "\\footcite", "\\textcite",
 ];
-
-pub enum EngineKind {
-    Xelatex,
-    Bib,
-}
 
 /// Scans every `*.tex` file directly in `cwd` (non-recursive) for citation
 /// prefixes followed by a non-word byte (e.g. `{`, end-of-file, whitespace).
@@ -69,32 +63,23 @@ fn is_ascii_letter(b: u8) -> bool {
 /// Probes `engine --version`. On spawn failure or non-zero exit, prints a
 /// yellow warning naming the engine and the platform-appropriate install
 /// hint. Never aborts.
-pub fn preflight(engine: &str, kind: EngineKind) -> Result<(), Box<dyn Error>> {
-    let status = Command::new(engine)
+pub fn preflight(engine: &str) {
+    let ok = Command::new(engine)
         .arg("--version")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status();
+        .status()
+        .is_ok_and(|s| s.success());
 
-    let bad = match status {
-        Ok(s) => !s.success(),
-        Err(_) => true,
-    };
-
-    if bad {
-        let label = match kind {
-            EngineKind::Xelatex => "xelatex",
-            EngineKind::Bib => engine, // biber / bibtex / ...
-        };
+    if !ok {
         eprintln!(
             "{} {} not found or failed --version probe.",
             "⚠".bold().yellow(),
-            label.bold()
+            engine.bold()
         );
         eprintln!("  {}", platform_hint());
         eprintln!("  Continuing — the real error will surface when ltx invokes the engine.");
     }
-    Ok(())
 }
 
 #[cfg(target_os = "linux")]
