@@ -69,9 +69,37 @@ fn run_engine(engine: &str, entry: &Path, cwd: &Path) -> Result<(), Box<dyn Erro
 fn rerun_requested(log: &Path) -> bool {
     // Logs are not guaranteed UTF-8, so read bytes and convert lossily.
     fs::read(log)
-        .map(|b| {
-            let text = String::from_utf8_lossy(&b);
-            text.contains("Rerun to get") || text.contains("Please rerun LaTeX")
-        })
+        .map(|b| log_requests_rerun(&String::from_utf8_lossy(&b)))
         .unwrap_or(false)
+}
+
+fn log_requests_rerun(log: &str) -> bool {
+    log.contains("Rerun to get") || log.contains("Please rerun LaTeX")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::log_requests_rerun;
+
+    #[test]
+    fn rerun_on_stale_cross_references() {
+        let log = "LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.";
+        assert!(log_requests_rerun(log));
+    }
+
+    #[test]
+    fn rerun_on_biblatex_request() {
+        assert!(log_requests_rerun("Package biblatex Warning: Please rerun LaTeX."));
+    }
+
+    #[test]
+    fn no_rerun_on_clean_log() {
+        assert!(!log_requests_rerun("Output written on main.pdf (1 page)."));
+    }
+
+    #[test]
+    fn no_rerun_when_only_biber_is_requested() {
+        // Needs biber, not another LaTeX pass; handled by the citation path.
+        assert!(!log_requests_rerun("Please (re)run Biber on the file: main"));
+    }
 }

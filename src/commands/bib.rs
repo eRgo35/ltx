@@ -92,7 +92,7 @@ pub fn preflight(engine: &str, kind: EngineKind) -> Result<(), Box<dyn Error>> {
             label.bold()
         );
         eprintln!("  {}", platform_hint());
-        eprintln!("  {}", "Continuing — the real error will surface when ltx invokes the engine.");
+        eprintln!("  Continuing — the real error will surface when ltx invokes the engine.");
     }
     Ok(())
 }
@@ -108,4 +108,45 @@ fn platform_hint() -> &'static str {
 #[cfg(target_os = "windows")]
 fn platform_hint() -> &'static str {
     "Install MiKTeX (provides xelatex, biber): https://miktex.org/"
+}
+
+#[cfg(test)]
+mod tests {
+    use super::scan_bytes;
+
+    #[test]
+    fn detects_each_citation_command() {
+        for src in [
+            "\\cite{a}",
+            "\\citep{a}",
+            "\\citet{a}",
+            "\\nocite{*}",
+            "\\footcite{a}",
+            "\\textcite{a}",
+        ] {
+            assert!(scan_bytes(src.as_bytes()), "{src}");
+        }
+    }
+
+    #[test]
+    fn detects_optional_args_and_starred_form() {
+        assert!(scan_bytes(b"see \\cite[p.~3]{a}"));
+        assert!(scan_bytes(b"\\cite*{a}"));
+    }
+
+    #[test]
+    fn detects_citation_at_end_of_input() {
+        assert!(scan_bytes(b"text \\cite"));
+    }
+
+    #[test]
+    fn ignores_longer_commands_sharing_a_prefix() {
+        assert!(!scan_bytes(b"\\citation{a} \\citestyle{b}"));
+    }
+
+    #[test]
+    fn ignores_documents_without_citations() {
+        assert!(!scan_bytes(b"\\section{Intro} plain text"));
+        assert!(!scan_bytes(b""));
+    }
 }

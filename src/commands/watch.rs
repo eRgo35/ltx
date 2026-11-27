@@ -96,3 +96,30 @@ fn is_relevant(path: &Path) -> bool {
     // Anything under images/ at any depth
     path.components().any(|c| c.as_os_str() == "images")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::is_relevant;
+    use std::path::Path;
+
+    #[test]
+    fn sources_are_relevant() {
+        assert!(is_relevant(Path::new("/p/main.tex")));
+        assert!(is_relevant(Path::new("/p/chapters/intro.tex")));
+        assert!(is_relevant(Path::new("/p/bibliography.bib")));
+    }
+
+    #[test]
+    fn anything_under_images_is_relevant() {
+        assert!(is_relevant(Path::new("/p/images/fig.png")));
+        assert!(is_relevant(Path::new("/p/images/sub/plot.pdf")));
+    }
+
+    #[test]
+    fn build_outputs_are_ignored() {
+        // Otherwise every build would trigger the next one.
+        for p in ["/p/main.pdf", "/p/main.aux", "/p/main.log", "/p/main.bcf"] {
+            assert!(!is_relevant(Path::new(p)), "{p}");
+        }
+    }
+}
