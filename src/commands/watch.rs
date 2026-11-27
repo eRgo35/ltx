@@ -5,6 +5,7 @@ use std::{
     time::Duration,
 };
 
+use colored::Colorize;
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 use crate::{
@@ -17,7 +18,7 @@ const DEBOUNCE: Duration = Duration::from_millis(300);
 
 type WatchEvent = notify::Result<Event>;
 
-pub fn watch_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
+pub fn watch_command(main_file: Option<&Path>, verbose: bool) -> Result<(), Box<dyn Error>> {
     let (config, cwd) = load_config()?;
     let engine = config.document.engine.clone();
 
@@ -46,8 +47,8 @@ pub fn watch_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
                     break;
                 }
                 println!("Change detected, rebuilding...");
-                if let Err(e) = build_command(main_file) {
-                    eprintln!("Build error: {:?}", e);
+                if let Err(e) = build_command(main_file, verbose) {
+                    eprintln!("{}{} {}", "error".red().bold(), ":".bold(), e);
                 }
             }
             Err(e) => {

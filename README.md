@@ -11,6 +11,7 @@ A command-line tool for managing LaTeX projects
 - **Project Creation**: Easily create new LaTeX projects with a predefined structure.
 - **Git Integration**: Automatically initializes a Git repository for your project.
 - **Build**: Runs `xelatex`, adds a `biber` pass when the document cites sources, and reruns when LaTeX asks for it (TOC, cross-references).
+- **Readable errors**: Errors and relevant warnings are read from the log and shown cargo-style, with the source line and location. Use `--verbose` for the full engine output.
 - **Watch**: Rebuilds on changes to `.tex`, `.bib` and files under `images/`.
 - **Clean / Run**: Removes intermediate files; builds and opens the PDF.
 - **Configuration**: Entry file and engines are set in `ltx.toml` (`--main-file` overrides the entry).

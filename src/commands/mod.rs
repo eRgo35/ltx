@@ -1,6 +1,7 @@
 pub mod bib;
 pub mod build;
 pub mod clean;
+pub mod diagnostics;
 pub mod new;
 pub mod run;
 pub mod watch;

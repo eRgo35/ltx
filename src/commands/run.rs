@@ -4,8 +4,8 @@ use std::process::Command;
 
 use crate::commands::build_command;
 
-pub fn run_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
-    let pdf_file = build_command(main_file)?;
+pub fn run_command(main_file: Option<&Path>, verbose: bool) -> Result<(), Box<dyn Error>> {
+    let pdf_file = build_command(main_file, verbose)?;
 
     #[cfg(target_os = "linux")]
     {
