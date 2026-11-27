@@ -2,7 +2,10 @@ use std::{env::current_dir, error::Error, fs::read_to_string, path::PathBuf};
 
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+// Every section and key is optional; missing ones take the defaults below.
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
 #[allow(dead_code)] // reserved for a future metadata command
 pub struct Project {
     pub name: String,
@@ -11,37 +14,42 @@ pub struct Project {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct Document {
-    #[serde(default = "default_entry")]
     pub entry: PathBuf,
-    #[serde(default = "default_engine")]
     pub engine: String,
 }
 
+impl Default for Document {
+    fn default() -> Self {
+        Document {
+            entry: PathBuf::from("main.tex"),
+            engine: String::from("xelatex"),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct Bib {
-    #[serde(default = "default_bib_engine")]
     pub engine: String,
 }
 
-#[derive(Debug, Deserialize)]
+impl Default for Bib {
+    fn default() -> Self {
+        Bib {
+            engine: String::from("biber"),
+        }
+    }
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
 #[allow(dead_code)]
 pub struct Config {
     pub project: Project,
     pub document: Document,
     pub bib: Bib,
-}
-
-fn default_entry() -> PathBuf {
-    PathBuf::from("main.tex")
-}
-
-fn default_engine() -> String {
-    String::from("xelatex")
-}
-
-fn default_bib_engine() -> String {
-    String::from("biber")
 }
 
 pub fn load_config() -> Result<(Config, PathBuf), Box<dyn Error>> {
@@ -88,6 +96,18 @@ mod tests {
         assert_eq!(cfg.document.entry, Path::new("main.tex"));
         assert_eq!(cfg.document.engine, "xelatex");
         assert_eq!(cfg.bib.engine, "biber");
+    }
+
+    #[test]
+    fn every_section_is_optional() {
+        let cfg: Config = toml::from_str("").unwrap();
+        assert_eq!(cfg.project.name, "");
+        assert_eq!(cfg.document.entry, Path::new("main.tex"));
+        assert_eq!(cfg.bib.engine, "biber");
+
+        let cfg: Config = toml::from_str("[document]\nentry = \"thesis.tex\"").unwrap();
+        assert_eq!(cfg.document.entry, Path::new("thesis.tex"));
+        assert_eq!(cfg.document.engine, "xelatex");
     }
 
     #[test]

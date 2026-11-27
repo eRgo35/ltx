@@ -12,7 +12,7 @@ use crate::{
     commands::{
         citations_present,
         diagnostics::{self, Diagnostic},
-        preflight, EngineKind,
+        preflight,
     },
     config::load_config,
 };
@@ -45,14 +45,14 @@ pub fn build_command(main_file: Option<&Path>, verbose: bool) -> Result<PathBuf,
     };
 
     // Preflight: warn (do not fail) when engines are missing.
-    preflight(&job.engine, EngineKind::Xelatex)?;
+    preflight(&job.engine);
 
     let mut pass = 1;
     job.latex(pass)?;
 
     // Optional pass: biber when citations are detected in cwd/*.tex
     if citations_present(&job.cwd) {
-        preflight(&config.bib.engine, EngineKind::Bib)?;
+        preflight(&config.bib.engine);
         job.biber(&config.bib.engine)?;
         pass += 1;
         job.latex(pass)?;
@@ -81,7 +81,11 @@ pub fn build_command(main_file: Option<&Path>, verbose: bool) -> Result<PathBuf,
     }
     status(
         "Finished",
-        &format!("`{}` in {:.2}s", job.pdf_name(), started.elapsed().as_secs_f64()),
+        &format!(
+            "`{}` in {:.2}s",
+            job.pdf_name(),
+            started.elapsed().as_secs_f64()
+        ),
     );
     Ok(pdf)
 }
@@ -234,7 +238,9 @@ mod tests {
 
     #[test]
     fn rerun_on_biblatex_request() {
-        assert!(log_requests_rerun("Package biblatex Warning: Please rerun LaTeX."));
+        assert!(log_requests_rerun(
+            "Package biblatex Warning: Please rerun LaTeX."
+        ));
     }
 
     #[test]
@@ -245,6 +251,8 @@ mod tests {
     #[test]
     fn no_rerun_when_only_biber_is_requested() {
         // Needs biber, not another LaTeX pass; handled by the citation path.
-        assert!(!log_requests_rerun("Please (re)run Biber on the file: main"));
+        assert!(!log_requests_rerun(
+            "Please (re)run Biber on the file: main"
+        ));
     }
 }

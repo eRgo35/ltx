@@ -1,5 +1,4 @@
 use std::{
-    error::Error,
     fs,
     path::Path,
     process::{Command, Stdio},
@@ -8,13 +7,13 @@ use std::{
 use colored::Colorize;
 
 const CITATION_PREFIXES: &[&str] = &[
-    "\\cite", "\\citep", "\\citet", "\\nocite", "\\footcite", "\\textcite",
+    "\\cite",
+    "\\citep",
+    "\\citet",
+    "\\nocite",
+    "\\footcite",
+    "\\textcite",
 ];
-
-pub enum EngineKind {
-    Xelatex,
-    Bib,
-}
 
 /// Scans every `*.tex` file directly in `cwd` (non-recursive) for citation
 /// prefixes followed by a non-word byte (e.g. `{`, end-of-file, whitespace).
@@ -41,6 +40,25 @@ pub fn citations_present(cwd: &Path) -> bool {
 }
 
 fn scan_bytes(bytes: &[u8]) -> bool {
+    bytes
+        .split(|&b| b == b'\n')
+        .any(|line| scan_line(strip_comment(line)))
+}
+
+/// Cuts a line at the first `%` that starts a comment (not `\%`).
+fn strip_comment(line: &[u8]) -> &[u8] {
+    let mut backslashes = 0;
+    for (i, &b) in line.iter().enumerate() {
+        match b {
+            b'\\' => backslashes += 1,
+            b'%' if backslashes % 2 == 0 => return &line[..i],
+            _ => backslashes = 0,
+        }
+    }
+    line
+}
+
+fn scan_line(bytes: &[u8]) -> bool {
     for prefix in CITATION_PREFIXES {
         let needle = prefix.as_bytes();
         let mut start = 0;
@@ -69,32 +87,23 @@ fn is_ascii_letter(b: u8) -> bool {
 /// Probes `engine --version`. On spawn failure or non-zero exit, prints a
 /// yellow warning naming the engine and the platform-appropriate install
 /// hint. Never aborts.
-pub fn preflight(engine: &str, kind: EngineKind) -> Result<(), Box<dyn Error>> {
-    let status = Command::new(engine)
+pub fn preflight(engine: &str) {
+    let ok = Command::new(engine)
         .arg("--version")
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .status();
+        .status()
+        .is_ok_and(|s| s.success());
 
-    let bad = match status {
-        Ok(s) => !s.success(),
-        Err(_) => true,
-    };
-
-    if bad {
-        let label = match kind {
-            EngineKind::Xelatex => "xelatex",
-            EngineKind::Bib => engine, // biber / bibtex / ...
-        };
+    if !ok {
         eprintln!(
             "{} {} not found or failed --version probe.",
             "⚠".bold().yellow(),
-            label.bold()
+            engine.bold()
         );
         eprintln!("  {}", platform_hint());
         eprintln!("  Continuing — the real error will surface when ltx invokes the engine.");
     }
-    Ok(())
 }
 
 #[cfg(target_os = "linux")]
@@ -142,6 +151,19 @@ mod tests {
     #[test]
     fn ignores_longer_commands_sharing_a_prefix() {
         assert!(!scan_bytes(b"\\citation{a} \\citestyle{b}"));
+    }
+
+    #[test]
+    fn ignores_commented_out_citations() {
+        assert!(!scan_bytes(b"% \\cite{a}\ntext"));
+        assert!(!scan_bytes(b"text % see \\cite{a}"));
+    }
+
+    #[test]
+    fn escaped_percent_does_not_start_a_comment() {
+        assert!(scan_bytes(b"50\\% of \\cite{a}"));
+        // `\\` is a line break, so the `%` after it starts a comment.
+        assert!(!scan_bytes(b"a\\\\% \\cite{a}"));
     }
 
     #[test]

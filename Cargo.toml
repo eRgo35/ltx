@@ -5,7 +5,6 @@ version = "0.1.2"
 edition = "2024"
 
 description = "A command-line tool for managing LaTeX projects"
-homepage = "https://github.com/eRgo35/ltx"
 repository = "https://github.com/eRgo35/ltx"
 documentation = "https://github.com/eRgo35/ltx"
 keywords = ["latex", "cli", "tool"]

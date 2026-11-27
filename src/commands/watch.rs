@@ -1,7 +1,7 @@
 use std::{
     error::Error,
     path::Path,
-    sync::mpsc::{channel, Receiver, RecvTimeoutError},
+    sync::mpsc::{Receiver, RecvTimeoutError, channel},
     time::Duration,
 };
 
@@ -9,7 +9,7 @@ use colored::Colorize;
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 use crate::{
-    commands::{build_command, preflight, EngineKind},
+    commands::{build_command, preflight},
     config::load_config,
 };
 
@@ -24,12 +24,11 @@ pub fn watch_command(main_file: Option<&Path>, verbose: bool) -> Result<(), Box<
 
     let (tx, rx) = channel();
 
-    let mut watcher: RecommendedWatcher =
-        Watcher::new(tx, notify::Config::default())?;
+    let mut watcher: RecommendedWatcher = Watcher::new(tx, notify::Config::default())?;
     watcher.watch(&cwd, RecursiveMode::Recursive)?;
 
     // Best-effort preflight so the user sees a warning before the first build.
-    let _ = preflight(&engine, EngineKind::Xelatex);
+    preflight(&engine);
 
     println!(
         "Watching {} for changes (.tex, .bib, images/*)...",
