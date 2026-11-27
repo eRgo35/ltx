@@ -15,22 +15,30 @@ const CITATION_PREFIXES: &[&str] = &[
     "\\textcite",
 ];
 
-/// Scans every `*.tex` file directly in `cwd` (non-recursive) for citation
-/// prefixes followed by a non-word byte (e.g. `{`, end-of-file, whitespace).
-/// Returns false on any IO error reading a single file (fail-closed).
-pub fn citations_present(cwd: &Path) -> bool {
-    let entries = match fs::read_dir(cwd) {
-        Ok(e) => e,
-        Err(_) => return false,
+/// Scans every `*.tex` file under `dir` (recursively, skipping hidden
+/// directories such as `.git`) for citation prefixes followed by a non-word
+/// byte (e.g. `{`, end-of-file, whitespace). Unreadable files and
+/// directories are skipped.
+pub fn citations_present(dir: &Path) -> bool {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return false;
     };
     for entry in entries.flatten() {
         let path = entry.path();
+        // file_type() does not follow symlinks, so loops cannot recurse forever.
+        if entry.file_type().is_ok_and(|t| t.is_dir()) {
+            let hidden = entry.file_name().to_string_lossy().starts_with('.');
+            if !hidden && citations_present(&path) {
+                return true;
+            }
+            continue;
+        }
         if path.extension().and_then(|e| e.to_str()) != Some("tex") {
             continue;
         }
         let bytes = match fs::read(&path) {
             Ok(b) => b,
-            Err(_) => continue, // fail-closed per FR-4
+            Err(_) => continue,
         };
         if scan_bytes(&bytes) {
             return true;
@@ -123,7 +131,24 @@ fn platform_hint() -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use super::scan_bytes;
+    use super::{citations_present, scan_bytes};
+    use std::fs;
+
+    #[test]
+    fn finds_citations_in_subdirectories_but_not_hidden_ones() {
+        let root = std::env::temp_dir().join(format!("ltx-cite-test-{}", std::process::id()));
+        let chapters = root.join("chapters/part1");
+        let hidden = root.join(".git");
+        fs::create_dir_all(&chapters).unwrap();
+        fs::create_dir_all(&hidden).unwrap();
+        fs::write(root.join("main.tex"), "\\include{chapters/part1/intro}").unwrap();
+        fs::write(hidden.join("old.tex"), "\\cite{a}").unwrap();
+        assert!(!citations_present(&root), "hidden directories are skipped");
+
+        fs::write(chapters.join("intro.tex"), "see \\cite{a}").unwrap();
+        assert!(citations_present(&root));
+        fs::remove_dir_all(&root).unwrap();
+    }
 
     #[test]
     fn detects_each_citation_command() {

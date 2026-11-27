@@ -58,8 +58,9 @@ pub fn build_command(main_file: Option<&Path>, verbose: bool) -> Result<PathBuf,
     let mut pass = 1;
     job.latex(pass)?;
 
-    // Optional pass: biber when citations are detected in cwd/*.tex
-    if citations_present(&job.cwd) {
+    // Optional pass: biber when any .tex file cites, or when biblatex asks
+    // for it (e.g. citations hidden in a macro from a .sty).
+    if citations_present(&job.cwd) || log_requests_biber(&read_lossy(&job.output("log"))) {
         let _ = preflight(&config.bib.engine);
         job.biber(&config.bib.engine)?;
         pass += 1;
@@ -282,13 +283,25 @@ fn read_lossy(path: &Path) -> String {
         .unwrap_or_default()
 }
 
+fn log_requests_biber(log: &str) -> bool {
+    log.contains("Please (re)run Biber")
+}
+
 fn log_requests_rerun(log: &str) -> bool {
     log.contains("Rerun to get") || log.contains("Please rerun LaTeX")
 }
 
 #[cfg(test)]
 mod tests {
-    use super::log_requests_rerun;
+    use super::{log_requests_biber, log_requests_rerun};
+
+    #[test]
+    fn biber_on_biblatex_request() {
+        assert!(log_requests_biber(
+            "Package biblatex Warning: Please (re)run Biber on the file:\n(biblatex) main"
+        ));
+        assert!(!log_requests_biber("Output written on main.pdf (1 page)."));
+    }
 
     #[test]
     fn rerun_on_stale_cross_references() {
