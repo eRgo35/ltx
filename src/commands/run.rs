@@ -1,15 +1,17 @@
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::commands::build_command;
 
-pub fn run_command(main_file: &PathBuf) -> Result<(), Box<dyn Error>> {
+pub fn run_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
     if let Err(e) = build_command(main_file) {
         eprintln!("Build error: {:?}", e);
     }
 
-    let mut pdf_file = main_file.clone();
+    let mut pdf_file = main_file
+        .map(Path::to_path_buf)
+        .unwrap_or_else(|| PathBuf::from("main.tex"));
     pdf_file.set_extension("pdf");
 
     #[cfg(target_os = "linux")]

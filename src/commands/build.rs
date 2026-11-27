@@ -1,27 +1,20 @@
-use std::{error::Error, path::PathBuf, process::Command};
+use std::{error::Error, path::Path, process::Command};
 
 use crate::{
     commands::{citations_present, preflight, EngineKind},
     config::load_config,
 };
 
-pub fn build_command(main_file: &PathBuf) -> Result<(), Box<dyn Error>> {
+/// `main_file` overrides `document.entry` from `ltx.toml` when given.
+pub fn build_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
     let (config, cwd) = load_config()?;
 
     let engine = config.document.engine.clone();
     let bib_engine = config.bib.engine.clone();
 
-    let entry = config
-        .document
-        .entry
-        .to_str()
-        .map(str::to_owned)
-        .unwrap_or_else(|| {
-            main_file
-                .to_str()
-                .unwrap_or("main.tex")
-                .to_owned()
-        });
+    let entry = main_file
+        .map(Path::to_path_buf)
+        .unwrap_or(config.document.entry);
 
     // Preflight: warn (do not fail) when engines are missing.
     preflight(&engine, EngineKind::Xelatex)?;

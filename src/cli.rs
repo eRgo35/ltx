@@ -27,8 +27,9 @@ pub enum Commands {
 
     #[command(alias = "b", about = "Build the LaTeX document")]
     Build {
-        #[arg(short, long, default_value = "main.tex")]
-        main_file: PathBuf,
+        /// Entry file; overrides `document.entry` from ltx.toml
+        #[arg(short, long)]
+        main_file: Option<PathBuf>,
     },
 
     #[command(
@@ -36,8 +37,9 @@ pub enum Commands {
         about = "Watch for changes and rebuild the LaTeX document"
     )]
     Watch {
-        #[arg(short, long, default_value = "main.tex")]
-        main_file: PathBuf,
+        /// Entry file; overrides `document.entry` from ltx.toml
+        #[arg(short, long)]
+        main_file: Option<PathBuf>,
     },
 
     #[command(alias = "c", about = "Clean build artifacts")]
@@ -45,7 +47,8 @@ pub enum Commands {
 
     #[command(alias = "r", about = "Run the compiled document")]
     Run {
-        #[arg(short, long, default_value = "main.tex")]
-        main_file: PathBuf,
+        /// Entry file; overrides `document.entry` from ltx.toml
+        #[arg(short, long)]
+        main_file: Option<PathBuf>,
     },
 }

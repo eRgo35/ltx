@@ -1,6 +1,6 @@
 use std::{
     error::Error,
-    path::{Path, PathBuf},
+    path::Path,
     sync::mpsc::channel,
 };
 
@@ -11,7 +11,7 @@ use crate::{
     config::load_config,
 };
 
-pub fn watch_command(main_file: &PathBuf) -> Result<(), Box<dyn Error>> {
+pub fn watch_command(main_file: Option<&Path>) -> Result<(), Box<dyn Error>> {
     let (config, cwd) = load_config()?;
     let engine = config.document.engine.clone();
 
