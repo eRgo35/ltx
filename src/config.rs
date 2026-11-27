@@ -1,4 +1,9 @@
-use std::{env::current_dir, error::Error, fs::read_to_string, path::PathBuf};
+use std::{
+    env::current_dir,
+    error::Error,
+    fs::read_to_string,
+    path::{Component, Path, PathBuf},
+};
 
 use serde::Deserialize;
 
@@ -18,6 +23,27 @@ pub struct Project {
 pub struct Document {
     pub entry: PathBuf,
     pub engine: String,
+    /// Directory for build outputs, relative to the project root.
+    /// Unset means the project root itself.
+    pub output: Option<PathBuf>,
+}
+
+impl Document {
+    /// `output`, checked to be a plain subdirectory of the project, since
+    /// `ltx clean` deletes it.
+    pub fn output_dir(&self) -> Result<Option<&Path>, String> {
+        let Some(dir) = &self.output else {
+            return Ok(None);
+        };
+        let plain = dir.components().all(|c| matches!(c, Component::Normal(_)));
+        if dir.as_os_str().is_empty() || !plain {
+            return Err(format!(
+                "document.output must be a subdirectory of the project, got `{}`",
+                dir.display()
+            ));
+        }
+        Ok(Some(dir))
+    }
 }
 
 impl Default for Document {
@@ -25,6 +51,7 @@ impl Default for Document {
         Document {
             entry: PathBuf::from("main.tex"),
             engine: String::from("xelatex"),
+            output: None,
         }
     }
 }
@@ -67,7 +94,7 @@ pub fn load_config() -> Result<(Config, PathBuf), Box<dyn Error>> {
 
 #[cfg(test)]
 mod tests {
-    use super::Config;
+    use super::{Config, Document};
     use std::path::Path;
 
     #[test]
@@ -96,6 +123,20 @@ mod tests {
         assert_eq!(cfg.document.entry, Path::new("main.tex"));
         assert_eq!(cfg.document.engine, "xelatex");
         assert_eq!(cfg.bib.engine, "biber");
+    }
+
+    #[test]
+    fn output_dir_must_stay_inside_the_project() {
+        let doc = |output: &str| Document {
+            output: Some(output.into()),
+            ..Document::default()
+        };
+        assert_eq!(doc("build").output_dir(), Ok(Some(Path::new("build"))));
+        assert_eq!(doc("out/pdf").output_dir(), Ok(Some(Path::new("out/pdf"))));
+        for bad in ["", ".", "..", "../x", "build/../..", "/tmp/x"] {
+            assert!(doc(bad).output_dir().is_err(), "{bad:?}");
+        }
+        assert_eq!(Document::default().output_dir(), Ok(None));
     }
 
     #[test]

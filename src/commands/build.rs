@@ -25,22 +25,28 @@ pub fn build_command(main_file: Option<&Path>, verbose: bool) -> Result<PathBuf,
     let started = Instant::now();
     let (config, cwd) = load_config()?;
 
+    let out = config.document.output_dir()?.map(Path::to_path_buf);
     let entry = main_file
         .map(Path::to_path_buf)
         .unwrap_or(config.document.entry);
 
-    // The engine writes outputs to cwd, named after the entry's stem (jobname).
+    // Outputs are named after the entry's stem (jobname).
     let jobname = entry
         .file_stem()
         .and_then(|s| s.to_str())
         .ok_or_else(|| format!("Invalid entry file: {}", entry.display()))?
         .to_owned();
 
+    if let Some(out) = &out {
+        mirror_tex_dirs(&cwd, &cwd, &cwd.join(out))?;
+    }
+
     let job = Job {
         engine: config.document.engine,
         entry,
         jobname,
         cwd,
+        out,
         verbose,
     };
 
@@ -95,6 +101,8 @@ struct Job {
     entry: PathBuf,
     jobname: String,
     cwd: PathBuf,
+    /// Output directory relative to `cwd`; `None` writes into `cwd`.
+    out: Option<PathBuf>,
     verbose: bool,
 }
 
@@ -108,8 +116,11 @@ impl Job {
         status("Compiling", &label);
 
         let mut cmd = Command::new(&self.engine);
-        cmd.args(["-interaction=nonstopmode", "-file-line-error"])
-            .arg(&self.entry)
+        cmd.args(["-interaction=nonstopmode", "-file-line-error"]);
+        if let Some(out) = &self.out {
+            cmd.arg(format!("-output-directory={}", out.display()));
+        }
+        cmd.arg(&self.entry)
             // Unwrapped, untruncated log lines keep the log parseable (TeX Live).
             .env("max_print_line", "10000")
             .env("error_line", "254")
@@ -127,10 +138,12 @@ impl Job {
     }
 
     fn biber(&self, bib_engine: &str) -> Result<(), Box<dyn Error>> {
-        status("Running", &format!("{bib_engine} {}", self.jobname));
+        // biber takes the control file's path without extension.
+        let control = self.relative(&self.jobname);
+        status("Running", &format!("{bib_engine} {}", control.display()));
 
         let mut cmd = Command::new(bib_engine);
-        cmd.arg(&self.jobname);
+        cmd.arg(&control);
         let (success, output) = self.run(cmd)?;
         if success {
             return Ok(());
@@ -173,12 +186,24 @@ impl Job {
         .into())
     }
 
+    /// Absolute path of a build output, e.g. `output("log")`.
     fn output(&self, ext: &str) -> PathBuf {
-        self.cwd.join(format!("{}.{ext}", self.jobname))
+        self.cwd
+            .join(self.relative(&format!("{}.{ext}", self.jobname)))
+    }
+
+    /// `name` inside the output directory, relative to the project root.
+    fn relative(&self, name: &str) -> PathBuf {
+        match &self.out {
+            Some(out) => out.join(name),
+            None => PathBuf::from(name),
+        }
     }
 
     fn pdf_name(&self) -> String {
-        format!("{}.pdf", self.jobname)
+        self.relative(&format!("{}.pdf", self.jobname))
+            .display()
+            .to_string()
     }
 }
 
@@ -200,6 +225,30 @@ fn fallback_errors(output: Option<&Output>, marker: &str, program: &str) -> Vec<
     } else {
         lines
     }
+}
+
+/// Creates `out` and, inside it, every directory under `dir` that holds
+/// `.tex` files: `\include{chapters/intro}` writes `chapters/intro.aux` into
+/// the output directory, and TeX cannot create directories itself.
+fn mirror_tex_dirs(root: &Path, dir: &Path, out: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(out)?;
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        // file_type() does not follow symlinks, so loops cannot recurse forever.
+        let hidden = entry.file_name().to_string_lossy().starts_with('.');
+        if !entry.file_type()?.is_dir() || hidden || path == out {
+            continue;
+        }
+        let has_tex = fs::read_dir(&path)?
+            .flatten()
+            .any(|e| e.path().extension().is_some_and(|x| x == "tex"));
+        if has_tex && let Ok(rel) = path.strip_prefix(root) {
+            fs::create_dir_all(out.join(rel))?;
+        }
+        mirror_tex_dirs(root, &path, out)?;
+    }
+    Ok(())
 }
 
 /// A right-aligned, cargo-style progress line on stderr.
